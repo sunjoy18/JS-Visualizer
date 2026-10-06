@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LeetCode Visualizer</title>
+<style>
+:root{--bg:#16181d;--panel:#1e2128;--line:#2e333d;--text:#e6e8ec;--dim:#8b92a0;--read:#e8b04a;--write:#4cc38a;--mark:#6aa9ff;--bad:#ff6b6b;font-family:Georgia,"Times New Roman",serif}
+@media (prefers-color-scheme:light){:root{--bg:#f6f5f1;--panel:#fff;--line:#d9d6cc;--text:#1d1f23;--dim:#6a6f7a;--read:#c98a12;--write:#1f9d63;--mark:#2c6fd1}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);padding:16px}
+h1{font-size:1.4rem;margin:0 0 4px}
+.sub{color:var(--dim);margin:0 0 16px;font-size:.95rem}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px}
+textarea,input{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace}
+textarea{height:380px;resize:vertical;tab-size:2;white-space:pre}
+label{display:block;font-size:.85rem;color:var(--dim);margin:10px 0 4px}
+button{background:var(--mark);color:#fff;border:0;border-radius:6px;padding:8px 14px;font:inherit;cursor:pointer}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.bar input[type=range]{flex:1;min-width:120px;padding:0}
+#view{min-height:140px;overflow-x:auto}
+.arg h3{margin:6px 0;font:600 .8rem ui-monospace,monospace;color:var(--dim)}
+.row{display:flex;gap:4px;margin-bottom:6px;width:max-content}
+.c{display:flex;flex-direction:column;align-items:center;min-width:44px}
+.v{width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:6px;font:14px ui-monospace,monospace;transition:background .12s}
+.v.r{background:var(--read);color:#111;border-color:var(--read)}
+.v.w{background:var(--write);color:#111;border-color:var(--write)}
+.i{font:11px ui-monospace,monospace;color:var(--dim);margin-top:2px}
+.tag{font:600 11px ui-monospace,monospace;color:var(--mark)}
+#msg{margin-top:10px;font:13px ui-monospace,monospace;min-height:1.4em}
+#out{margin-top:6px;font:13px ui-monospace,monospace;color:var(--dim);white-space:pre-wrap;word-break:break-all}
+.err{color:var(--bad)}
+.ok{color:var(--write)}
+.hint{font-size:.8rem;color:var(--dim);margin-top:8px;line-height:1.5}
+code{font-family:ui-monospace,monospace}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;width:min(440px,92vw)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.row.l{align-items:center}.nd{width:auto;min-width:44px;padding:0 10px}.ar{margin:0 2px}
+.t{display:flex;flex-direction:column;align-items:center}.kids{display:flex;gap:10px;margin-top:10px;border-top:1px solid var(--line);padding-top:10px}.gap{min-width:20px}
+.kv{font:13px ui-monospace,monospace;display:grid;gap:4px;width:max-content}.kvr{display:flex;gap:10px;padding:4px 8px;border:1px solid var(--line);border-radius:6px}
+.kvr.r{background:var(--read);color:#111}.kvr.w{background:var(--write);color:#111}.kk{color:var(--dim);min-width:40px}.kvr.r .kk,.kvr.w .kk{color:#222}
+</style>
+</head>
+<body>
+<h1>LeetCode visualizer</h1>
+<p class="sub">Paste a full solution, including the call at the bottom, then step through every array read and write.</p>
+<div class="grid">
+  <div class="panel">
+    <label for="code">Your solution</label>
+    <textarea id="code" spellcheck="false" placeholder="Paste your code here, for example:&#10;var plusOne = function (digits) { ... };&#10;console.log(plusOne([9,9]));"></textarea>
+    <div class="bar">
+      <button id="run">Visualize</button>
+      <button class="ghost" id="save">Save to repo</button>
+      <button class="ghost" id="cfg">GitHub settings</button>
+    </div>
+    <div id="saveMsg" class="hint"></div>
+    <p class="hint">Everything passed into your function is tracked: arrays, strings, linked lists, trees, Maps, Sets and objects. Reads are amber and writes are green. <code>ListNode</code>, <code>TreeNode</code>, <code>list([1,2,3])</code> and <code>tree([1,2,3,null,4])</code> are built in. Optional: <code>mark("left", l)</code> shows a pointer under an index of the first array or string, and <code>log("sum", s)</code> adds a value to the step list.</p>
+  </div>
+  <div class="panel">
+    <div id="view"><p class="hint">Paste code and press Visualize.</p></div>
+    <div id="msg"></div>
+    <div class="bar">
+      <button class="ghost" id="first" aria-label="First step">⏮</button>
+      <button class="ghost" id="prev" aria-label="Previous step">◀</button>
+      <button id="play">Play</button>
+      <button class="ghost" id="next" aria-label="Next step">▶</button>
+      <input type="range" id="seek" min="0" max="0" value="0" aria-label="Step">
+      <span id="count" class="hint">0 / 0</span>
+    </div>
+    <label for="speed">Speed</label>
+    <input type="range" id="speed" min="1" max="10" value="6">
+    <div id="out"></div>
+  </div>
+</div>
+
+<dialog id="dlg">
+  <form method="dialog" id="cfgForm">
+    <h2 style="margin-top:0;font-size:1.1rem">GitHub settings</h2>
+    <label for="gOwner">Username or organization</label><input id="gOwner" autocomplete="off">
+    <label for="gRepo">Repository name</label><input id="gRepo" autocomplete="off">
+    <label for="gBranch">Branch</label><input id="gBranch" value="main" autocomplete="off">
+    <label for="gDir">Folder for answers</label><input id="gDir" value="solutions" autocomplete="off">
+    <label for="gTok">Personal access token</label><input id="gTok" type="password" autocomplete="off">
+    <p class="hint">Use a fine-grained token limited to this one repository with Contents: read and write. It is stored only in this browser's localStorage and is never written to your repo.</p>
+    <div class="bar"><button value="ok" id="cfgOk">Save settings</button><button class="ghost" value="cancel">Cancel</button></div>
+  </form>
+</dialog>
+
+<script>
+const $=id=>document.getElementById(id), LIMIT=4000;
+let steps=[], pos=0, timer=null;
+
+/* ---------- running and tracing ---------- */
+class ListNode{constructor(val=0,next=null){this.val=val;this.next=next;}}
+class TreeNode{constructor(val=0,left=null,right=null){this.val=val;this.left=left;this.right=right;}}
+const list=a=>{let h=null;for(let i=a.length-1;i>=0;i--)h=new ListNode(a[i],h);return h;};
+const tree=a=>{if(!a.length||a[0]==null)return null;const r=new TreeNode(a[0]),q=[r];let i=1;while(q.length&&i<a.length){const n=q.shift();if(a[i]!=null)q.push(n.left=new TreeNode(a[i]));i++;if(i<a.length&&a[i]!=null)q.push(n.right=new TreeNode(a[i]));i++;}return r;};
+const ids=new WeakMap(), raws=new WeakMap(), pc=new WeakMap(); let nid=0;
+const idOf=o=>{if(!ids.has(o))ids.set(o,++nid);return ids.get(o);};
+const unw=v=>(v&&typeof v==="object"&&raws.get(v))||v;
+const isIdx=k=>typeof k==="string"&&/^\d+$/.test(k);
+const wrappable=v=>["[object Array]","[object Object]","[object Map]","[object Set]"].includes(Object.prototype.toString.call(v));
+
+/* turn any value into a plain description the renderer can draw */
+function ser(v,d=0,seen=new Set()){
+  v=unw(v);
+  if(typeof v==="function") return {k:"p",v:"ƒ"};
+  if(v===null||typeof v!=="object") return {k:"p",v:v===undefined?"undefined":v};
+  const id=idOf(v);
+  if(seen.has(v)||d>30) return {k:"ref",id};
+  seen.add(v);
+  const S=x=>ser(x,d+1,seen);
+  let out;
+  if(Array.isArray(v)) out={k:"a",id,items:v.map(S)};
+  else if(v instanceof Map) out={k:"m",id,items:[...v].map(([a,b])=>[S(a),S(b)])};
+  else if(v instanceof Set) out={k:"s",id,items:[...v].map(S)};
+  else if("val" in v&&"next" in v){
+    const nodes=[],loop=new Set();let n=v,cyc=false;
+    while(n&&typeof n==="object"){n=unw(n);if(loop.has(n)){cyc=true;break;}loop.add(n);nodes.push({id:idOf(n),val:S(n.val)});n=n.next;}
+    out={k:"l",id,nodes,cyc};
+  }
+  else if("val" in v&&("left" in v||"right" in v)){
+    const c=x=>{x=unw(x);return x&&typeof x==="object"?S(x):null;};
+    out={k:"t",id,val:S(v.val),l:c(v.left),r:c(v.right)};
+  }
+  else out={k:"o",id,entries:Object.keys(v).map(k=>[k,S(v[k])])};
+  seen.delete(v);
+  return out;
+}
+function txt(n){
+  if(!n) return "_";
+  switch(n.k){
+    case "p": return typeof n.v==="string"?JSON.stringify(n.v):String(n.v);
+    case "a": return "["+n.items.map(txt).join(",")+"]";
+    case "s": return "Set{"+n.items.map(txt).join(",")+"}";
+    case "m": return "Map{"+n.items.map(([a,b])=>txt(a)+"=>"+txt(b)).join(",")+"}";
+    case "l": return n.nodes.map(x=>txt(x.val)).join("→")+(n.cyc?"→↺":"→null");
+    case "t": return txt(n.val)+(n.l||n.r?"("+txt(n.l)+","+txt(n.r)+")":"");
+    case "o": return "{"+n.entries.map(([k,v])=>k+":"+txt(v)).join(",")+"}";
+    default: return "↺";
+  }
+}
+const fmt=v=>txt(ser(v));
+
+function run(){
+  stop(); steps=[]; pos=0; $("out").textContent=""; $("msg").textContent="";
+  const code=$("code").value, logs=[], marks={}; let raw=[], depth=0;
+  const fail=t=>{$("view").innerHTML="";$("msg").innerHTML='<span class="err"></span>';$("msg").firstChild.textContent=t;setSeek();};
+  if(!code.trim()) return fail("Paste a solution first.");
+  const names=[...code.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g),...code.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s+)?(?:function|\([^)]*\)\s*=>|[\w$]+\s*=>)/g)].map(m=>m[1]);
+  const callRe=n=>new RegExp("(?<!function\\s)(?<!new\\s)(?<![\\w$.])"+n.replace(/\$/g,"\\$")+"\\s*\\(","g");
+  let name,best=-1;
+  [...new Set(names)].forEach(n=>{const ms=[...code.matchAll(callRe(n))];if(ms.length&&ms[ms.length-1].index>best){best=ms[ms.length-1].index;name=n;}});
+  if(!name) return fail("No call found. Add a call at the bottom, such as console.log(myFunc([1,2,3])).");
+  const src=code.replace(callRe(name),"__w("+name+")(");
+  const snap=ev=>{ if(steps.length>=LIMIT) throw new Error("Stopped after "+LIMIT+" steps. Try a smaller input."); steps.push({a:raw.map(x=>ser(x)),m:{...marks},ev}); };
+  const sv=v=>{v=unw(v);return v&&typeof v==="object"?fmt(v):typeof v==="string"?JSON.stringify(v):String(v);};
+  const wrap=v=>{
+    if(!v||typeof v!=="object"||raws.has(v)||!wrappable(v)) return v;
+    if(pc.has(v)) return pc.get(v);
+    const p=new Proxy(v,{
+      get(o,k,r){
+        if(o instanceof Map||o instanceof Set){
+          const f=o[k];
+          if(typeof f==="function") return (...a)=>{
+            const res=f.apply(o,a.map(unw));
+            const rd=/^(get|has|keys|values|entries|forEach)$/.test(k);
+            snap({t:rd?"r":"w",id:idOf(o),key:a[0]&&typeof a[0]==="object"?"":a[0],text:"."+String(k)+"("+a.map(sv).join(", ")+")"+(res!==undefined&&(typeof res!=="object")?" → "+res:"")});
+            return wrap(res);
+          };
+          return k==="size"?o.size:f;
+        }
+        const val=Reflect.get(o,k,r);
+        if(typeof k==="string"&&typeof val!=="function"&&(Array.isArray(o)?isIdx(k):true)) snap({t:"r",id:idOf(o),key:k,arr:Array.isArray(o),val:sv(val)});
+        return wrap(val);
+      },
+      set(o,k,v2){
+        const val=unw(v2); const ok=Reflect.set(o,k,val);
+        if(typeof k==="string"&&typeof val!=="function"&&(Array.isArray(o)?isIdx(k):true)) snap({t:"w",id:idOf(o),key:k,arr:Array.isArray(o),val:sv(val)});
+        return ok;
+      }
+    });
+    pc.set(v,p); raws.set(p,v); return p;
+  };
+  const __w=fn=>typeof fn!=="function"?fn:(...args)=>{
+    const top=depth===0;
+    if(top){raw=args;Object.keys(marks).forEach(k=>delete marks[k]);snap({t:"s",text:"Call "+name+"("+args.map(a=>fmt(a)).join(", ")+")"});}
+    depth++;
+    try{const res=fn(...(top?args.map(wrap):args)); if(top) logs.push("Returned: "+fmt(res)); return res;}
+    finally{depth--;}
+  };
+  const cons={log:(...a)=>logs.push(a.map(x=>typeof x==="string"?x:fmt(x)).join(" "))};
+  cons.error=cons.warn=cons.info=cons.log;
+  const mark=(l,v)=>{marks[l]=v;snap({t:"m",text:'mark "'+l+'" = '+v});};
+  const log=(l,v)=>snap({t:"l",text:l+" = "+fmt(v)});
+  try{ new Function("mark","log","console","__w","ListNode","TreeNode","list","tree","return (function(){\n"+src+"\n})()")(mark,log,cons,__w,ListNode,TreeNode,list,tree); }
+  catch(e){ logs.push("Error: "+e.message); }
+  if(!steps.length) return fail(logs.find(l=>l.startsWith("Error"))||"The function was never called.");
+  $("out").textContent=logs.join("\n")+"\n("+steps.length+" steps)";
+  setSeek(); render();
+}
+
+/* ---------- rendering ---------- */
+function setSeek(){const s=$("seek");s.max=Math.max(0,steps.length-1);s.value=pos;$("count").textContent=(steps.length?pos+1:0)+" / "+steps.length;}
+function describe(s){
+  const e=s.ev; if(e.text) return e.text;
+  return (e.t==="r"?"read ":"write ")+(e.arr?"["+e.key+"]":"."+e.key)+(e.t==="r"?" → ":" = ")+e.val;
+}
+const el=(tag,cls,t)=>{const x=document.createElement(tag);if(cls)x.className=cls;if(t!==undefined)x.textContent=t;return x;};
+const show=n=>n.k==="p"?(typeof n.v==="string"?JSON.stringify(n.v):String(n.v)):n.k==="a"?"[…]":n.k==="ref"?"↺":"{…}";
+const hl=(s,id,key)=>{const e=s.ev;return e.id===id&&(key===undefined||String(e.key)===String(key))?(e.t==="w"?"w":"r"):"";};
+function chip(t,cls,idx,tags){
+  const c=el("div","c"); c.append(el("div","v "+cls,t));
+  if(idx!==undefined) c.append(el("div","i",idx));
+  if(tags&&tags.length) c.append(el("div","tag",tags.join(" ")));
+  return c;
+}
+const tagsAt=(s,j)=>Object.keys(s.m).filter(l=>s.m[l]===j);
+function arrRow(n,s,tagsOn){const r=el("div","row");n.items.forEach((it,j)=>r.append(chip(show(it),hl(s,n.id,j),j,tagsOn?tagsAt(s,j):[])));return r;}
+function tnode(n,s){
+  const w=el("div","t"); w.append(el("div","v nd "+hl(s,n.id),show(n.val)));
+  if(n.l||n.r){const k=el("div","kids");[n.l,n.r].forEach(c=>k.append(c?tnode(c,s):el("div","t gap")));w.append(k);}
+  return w;
+}
+function draw(n,s,top){
+  const b=el("div");
+  if(n.k==="p"){
+    if(typeof n.v==="string"&&top){const r=el("div","row");[...n.v].forEach((ch,j)=>r.append(chip(ch,"",j,tagsAt(s,j))));b.append(r);}
+    else b.append(el("code","",show(n)));
+  } else if(n.k==="a"){
+    if(n.items.some(x=>x.k==="a")) n.items.forEach(x=>b.append(x.k==="a"?arrRow(x,s,false):arrRow({id:n.id,items:[x]},s,false)));
+    else b.append(arrRow(n,s,top));
+  } else if(n.k==="s"){
+    const r=el("div","row"); n.items.forEach(x=>r.append(chip(show(x),hl(s,n.id,x.v),undefined,[]))); b.append(r);
+  } else if(n.k==="l"){
+    const r=el("div","row l");
+    n.nodes.forEach(x=>r.append(el("div","v nd "+hl(s,x.id),show(x.val)),el("div","i ar","→")));
+    r.append(el("div","i ar",n.cyc?"↺ cycle":"null")); b.append(r);
+  } else if(n.k==="t"){ b.append(tnode(n,s));
+  } else if(n.k==="m"||n.k==="o"){
+    const tb=el("div","kv");
+    (n.k==="m"?n.items:n.entries.map(([k,v])=>[{k:"p",v:k},v])).forEach(([a,c])=>{
+      const r=el("div","kvr "+hl(s,n.id,a.v)); r.append(el("span","kk",show(a)),el("span","",show(c))); tb.append(r);
+    });
+    b.append(tb);
+  } else b.append(el("code","",show(n)));
+  return b;
+}
+function render(){
+  const s=steps[pos]; if(!s) return;
+  const v=$("view"); v.innerHTML="";
+  s.a.forEach((n,k)=>{const bx=el("div","arg");bx.append(el("h3","","arg"+k),draw(n,s,true));v.append(bx);});
+  $("msg").textContent=describe(s); setSeek();
+}
+function go(n){pos=Math.min(Math.max(0,n),steps.length-1);render();}
+function stop(){clearInterval(timer);timer=null;$("play").textContent="Play";}
+function play(){
+  if(timer) return stop(); if(!steps.length) return;
+  if(pos>=steps.length-1) pos=0;
+  $("play").textContent="Pause";
+  timer=setInterval(()=>{ if(pos>=steps.length-1) return stop(); go(pos+1); },1100-$("speed").value*100);
+}
+$("run").onclick=run; $("play").onclick=play;
+$("next").onclick=()=>{stop();go(pos+1)}; $("prev").onclick=()=>{stop();go(pos-1)}; $("first").onclick=()=>{stop();go(0)};
+$("seek").oninput=e=>{stop();go(+e.target.value)};
+$("speed").oninput=()=>{if(timer){stop();play();}};
+$("code").addEventListener("keydown",e=>{if(e.key==="Tab"){e.preventDefault();const t=e.target;t.setRangeText("  ",t.selectionStart,t.selectionEnd,"end");}});
+
+/* ---------- save to GitHub ---------- */
+const KEY="lcviz-gh", cfg=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return {}}};
+$("cfg").onclick=()=>{const c=cfg();["Owner","Repo","Branch","Dir","Tok"].forEach(k=>{const v=c[k.toLowerCase()];if(v)$("g"+k).value=v;});$("dlg").showModal();};
+$("cfgOk").onclick=()=>{try{localStorage.setItem(KEY,JSON.stringify({owner:$("gOwner").value.trim(),repo:$("gRepo").value.trim(),branch:$("gBranch").value.trim()||"main",dir:$("gDir").value.trim().replace(/^\/+|\/+$/g,""),tok:$("gTok").value.trim()}));}catch(e){}};
+const msg=(t,ok)=>{const m=$("saveMsg");m.className="hint "+(ok?"ok":"err");m.textContent=t;};
+const b64=s=>btoa(unescape(encodeURIComponent(s)));
+$("save").onclick=async()=>{
+  const code=$("code").value; if(!code.trim()) return msg("Nothing to save yet.");
+  const c=cfg(); if(!c.owner||!c.repo||!c.tok){msg("Add your GitHub settings first.");return $("cfg").click();}
+  const raw=prompt("Problem name (for example: 66 plus one)"); if(!raw) return;
+  const file=raw.trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")+".js";
+  const path=(c.dir?c.dir+"/":"")+file;
+  const url="https://api.github.com/repos/"+c.owner+"/"+c.repo+"/contents/"+path;
+  const h={Authorization:"Bearer "+c.tok,Accept:"application/vnd.github+json"};
+  try{
+    let sha; const g=await fetch(url+"?ref="+encodeURIComponent(c.branch),{headers:h});
+    if(g.ok){ if(!confirm(path+" already exists. Overwrite it?")) return; sha=(await g.json()).sha; }
+    else if(g.status!==404) throw new Error("GitHub said "+g.status+" "+(await g.text()).slice(0,120));
+    const r=await fetch(url,{method:"PUT",headers:h,body:JSON.stringify({message:"Add solution: "+raw.trim(),content:b64(code),branch:c.branch,sha})});
+    if(!r.ok) throw new Error("GitHub said "+r.status+" "+(await r.text()).slice(0,120));
+    msg("Saved to "+c.owner+"/"+c.repo+"/"+path,true);
+  }catch(e){msg(e.message);}
+};
+</script>
+</body>
+</html>
